@@ -1,8 +1,11 @@
 //Board is
-// https://github.com/LilyGO/TTGO-LORA32/tree/LilyGO-868-V1.0
+// V1 from https://github.com/lewisxhe/TTGO-LoRa-Series (note pinouts and special pin assignments)
+//https://github.com/LilyGO/TTGO-LORA32/tree/LilyGO-868-V1.0
 
+
+// Notes:
 // BLE WiFi cannot run concurrently using default partitioning scheme as it is too big
-//
+// Requires: ThingPulse SSD1306 library
 
 #include <SPI.h>
 #include <LoRa.h>
