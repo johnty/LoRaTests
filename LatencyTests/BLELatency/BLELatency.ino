@@ -16,8 +16,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-#define D0 23 //TTGO
-
+#define D0 34 //TTGO
+//#define D0 4 //D32 PRO
 bool armed = true;
 
 static const uint8_t led = 5;
@@ -108,7 +108,7 @@ void setup() {
                       BLECharacteristic::PROPERTY_NOTIFY |
                       BLECharacteristic::PROPERTY_WRITE_NR
                     );
-  //pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
+  pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
 
   // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
   // Create a BLE Descriptor

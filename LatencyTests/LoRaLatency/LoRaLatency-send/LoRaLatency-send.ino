@@ -40,12 +40,12 @@ void setup() {
   pinMode(2, OUTPUT);
   pinMode(D0, INPUT);
 
-
   Serial.begin(115200);
   while (!Serial);
 
   Serial.print("boot # ");
   Serial.println(bootCount);
+
 
   Serial.println("Starting LoRa...");
   SPI.begin(SCK, MISO, MOSI, SS);
