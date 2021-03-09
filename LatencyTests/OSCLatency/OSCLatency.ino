@@ -13,7 +13,7 @@
 #define SOFTAP 0
 
 //#define D0 21 //adafruit
-#define D0 23 //TTGO
+#define D0 34 //TTGO
 
 WiFiUDP udp;
 
@@ -74,6 +74,11 @@ void setup()
   Serial.print(F("IP address is "));
   if (SOFTAP) Serial.println(WiFi.softAPIP());
   else Serial.println(WiFi.localIP());
+
+  WiFi.setTxPower(WIFI_POWER_19_5dBm); //doesn't do anything?
+  wifi_power_t pwr = WiFi.getTxPower();
+  Serial.print("WiFi Tx power = ");
+  Serial.println((int)pwr);
 
   //Serial.println("doing nothing for 30 seconds....");
   //delay(30*1000);

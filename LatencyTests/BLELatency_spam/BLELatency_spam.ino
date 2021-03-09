@@ -28,6 +28,7 @@ bool deviceConnected = false;
 int delay_ms = 1000;
 uint16_t time_0;
 uint16_t time_elapsed;
+uint16_t time_1; //for speed lim, better than delay
 
 #define MIDI_SERVICE_UUID        "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 #define MIDI_CHARACTERISTIC_UUID "7772e5db-3868-4112-a1a9-f2669d106bf3"
@@ -123,12 +124,12 @@ void setup() {
   //set conn intervals
   pServer->getAdvertising()->setMinPreferred(0x06); //6x1.25 = 7.5 ms
   pServer->getAdvertising()->setMaxPreferred(0x0C); //12x1.25 = 15 ms (Apple BLE MIDI spec)
-  
 
-//  BLESecurity *pSecurity = new BLESecurity();
-//  pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_BOND);
-//  pSecurity->setCapability(ESP_IO_CAP_NONE);
-//  pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+
+  //  BLESecurity *pSecurity = new BLESecurity();
+  //  pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_BOND);
+  //  pSecurity->setCapability(ESP_IO_CAP_NONE);
+  //  pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
 
   pServer->getAdvertising()->addServiceUUID(MIDI_SERVICE_UUID);
 
@@ -154,12 +155,14 @@ void setup() {
   midiPacketLong[PKT_SIZE - 1] = 0xF7;
 
   time_0 = millis();
+  time_1 = time_0;
 }
 
 bool flip;
+int wait_int_us = 12500;
 
 void loop() {
-
+ 
   if (deviceConnected) {
 
     time_elapsed = millis() - time_0;
@@ -173,9 +176,22 @@ void loop() {
     byte tl = B01111111 & time_elapsed;
     midiPacket[1] = B10000000 | tl;
 
-    if (digitalRead(D0) == LOW && !armed) {
+    uint16_t te = micros() - time_1;
+    if (te > wait_int_us) {
+      
       armed = true;
+      time_1 = micros();
+    }
+
+    if (digitalRead(D0) == LOW && armed) {
       //AppleMIDI.noteOff(84, 0, 1);
+
+      midiPacket[3] = 0x3c; // middle C
+      midiPacket[2] = 0x90; // note down, channel 0
+      midiPacket[4] = 0;  // velocity 0
+      pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
+      pCharacteristic->notify();
+      armed = false;
     }
 
     if (digitalRead(D0) == HIGH && armed) {
@@ -189,20 +205,8 @@ void loop() {
       pCharacteristic->notify();
 
       armed = false;
-      Serial.println(".");
+      //Serial.println(".");
     }
-    //delay(delay_ms);
-
-    // note up
-    /*
-        midiPacket[2] = 0x80; // note up, channel 0
-        midiPacket[4] = 0;    // velocity
-        pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes)
-        pCharacteristic->notify();
-
-
-        delay(delay_ms);
-    */
 
   }
 }

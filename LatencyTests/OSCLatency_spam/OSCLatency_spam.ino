@@ -27,8 +27,8 @@ char pass[] = "";    // your network password (use for WPA, or use as key for WE
 IPAddress destIP(192, 168, 2, 100); //
 const unsigned int destPort = 7000;
 
-
-unsigned long t0 = millis();
+long looptimer_0;
+long t0 = millis();
 bool isConnected = false;
 
 
@@ -80,6 +80,7 @@ void setup()
 
 
   t0 = micros();
+  looptimer_0 = millis();
 
 }
 
@@ -89,7 +90,13 @@ void setup()
 bool armed = false;
 bool valChanged;
 
-int send_interval = 0;
+int send_interval = 100000;
+//in Hz: 0       10     20     25     50     75     80    100,  150   200
+int send_intervals[10] = {999999, 100000, 50000, 40000, 20000, 13333, 12500, 10000, 6667, 5000};
+const int numIntervals = 10;
+const int test_interval_ms = 10000; //duration to run each send rate for, in ms
+int currMode = 0;
+
 
 //~2300:      0
 //1000Hz:   960
@@ -99,30 +106,57 @@ int send_interval = 0;
 //100Hz:  10000
 //50Hz:   20000;
 //10Hz:  100000;
-int preVal = 0;;
+int preVal = 0;
+int val;
 
 void loop()
 {
-  armed = false;
-  int val = digitalRead(D0);
-  if (val != preVal)
-    valChanged = true;
-  else
-    valChanged = false;
+  //do each mode for 10 seconds
+  if (millis() - looptimer_0 > test_interval_ms)
+  {
+    Serial.println(".");
+    if (currMode == 0) { //time sleep for 5 seconds to sync power data
+      esp_sleep_enable_timer_wakeup(5 * 1e6);
+      delay(100);
+      esp_light_sleep_start();
+    }
+    else
+    {
+      send_interval = send_intervals[currMode];
+      Serial.print("SI = ");
+      Serial.println(send_interval);
+    }
+    currMode++;
+    if (currMode >= numIntervals)
+    {
+      currMode = 0;
+    }
+    //reset loop timer for next round
+    looptimer_0 = millis();
+  }
 
-  OSCMessage oscMsg("/a");
-  udp.beginPacket(destIP, destPort);
-  oscMsg.add(val);
-  oscMsg.send(udp);
+  armed = false;
+
+  //  if (val != preVal)
+  //    valChanged = true;
+  //  else
+  //    valChanged = false;
+
   long t1 = micros();
   int diff = t1 - t0;
-  if ( (diff >= send_interval) || (valChanged && (val == 1)) )
+  if ( (diff >= send_interval) ) //|| (valChanged && (val == 1)) )
     armed = true;
 
   if (isConnected && armed) {
+    OSCMessage oscMsg("/a");
+    udp.beginPacket(destIP, destPort);
+    val = digitalRead(D0);
+    oscMsg.add(val);
+    oscMsg.send(udp);
+
     udp.endPacket();
     //Serial.println(".");
-    t0 = t1;
+    t0 = micros();
   }
   preVal = val;
 }
