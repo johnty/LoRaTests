@@ -90,12 +90,16 @@ void setup()
 bool armed = false;
 bool valChanged;
 
-int send_interval = 100000;
-//in Hz: 0       10     20     25     50     75     80    100,  150   200
-int send_intervals[10] = {999999, 100000, 50000, 40000, 20000, 13333, 12500, 10000, 6667, 5000};
+
+//                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
+int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
+int send_interval = 10000; //default 100hz
+
 const int numIntervals = 10;
-const int test_interval_ms = 10000; //duration to run each send rate for, in ms
+const int test_interval_ms = 30000; //duration to run each send rate for, in ms
 int currMode = 0;
+
+#define AUTO_CHANGE true
 
 
 //~2300:      0
@@ -111,28 +115,43 @@ int val;
 
 void loop()
 {
-  //do each mode for 10 seconds
-  if (millis() - looptimer_0 > test_interval_ms)
+  if (Serial.available())
   {
-    Serial.println(".");
-    if (currMode == 0) { //time sleep for 5 seconds to sync power data
-      esp_sleep_enable_timer_wakeup(5 * 1e6);
-      delay(100);
-      esp_light_sleep_start();
+    char ch = Serial.read();
+    int idx = '9' - ch; //'0'-'9' is ASCII 48-57
+    if (idx < numIntervals && idx >= 0) { //ignore carriage return
+      send_interval = send_intervals[idx];
     }
-    else
+    Serial.print("SI = ");
+    Serial.println(send_interval);
+
+  }
+
+  //do each mode for 10 seconds
+  if (AUTO_CHANGE)
+  {
+    if (millis() - looptimer_0 > test_interval_ms)
     {
-      send_interval = send_intervals[currMode];
-      Serial.print("SI = ");
-      Serial.println(send_interval);
+      Serial.println(".");
+      if (currMode == 0) { //time sleep for 5 seconds to sync power data
+        esp_sleep_enable_timer_wakeup(5 * 1e6);
+        delay(100);
+        esp_light_sleep_start();
+      }
+      else
+      {
+        send_interval = send_intervals[currMode];
+        Serial.print("SI = ");
+        Serial.println(send_interval);
+      }
+      currMode++;
+      if (currMode >= numIntervals)
+      {
+        currMode = 0;
+      }
+      //reset loop timer for next round
+      looptimer_0 = millis();
     }
-    currMode++;
-    if (currMode >= numIntervals)
-    {
-      currMode = 0;
-    }
-    //reset loop timer for next round
-    looptimer_0 = millis();
   }
 
   armed = false;

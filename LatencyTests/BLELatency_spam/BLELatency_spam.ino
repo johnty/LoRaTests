@@ -25,24 +25,26 @@ static const uint8_t led = 5;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
 
-int delay_ms = 1000;
-uint16_t time_0;
-uint16_t time_elapsed;
-uint16_t time_1; //for speed lim, better than delay
+uint16_t time_0; //for BLE timestamping
+uint16_t time_1; //for send rate control
+
+
+
+//                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
+int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
+int send_interval = 40000;
+int numIntervals = 10;
 
 #define MIDI_SERVICE_UUID        "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 #define MIDI_CHARACTERISTIC_UUID "7772e5db-3868-4112-a1a9-f2669d106bf3"
 
 uint8_t midiPacket[] = {
   0x80,  // header
-  0x80,  // timestamp, not implemented
+  0x80,  // timestamp, to be filled
   0x00,  // status
   0x3c,  // 0x3c == 60 == middle c
   0x00   // velocity
 };
-
-#define PKT_SIZE 20
-uint8_t midiPacketLong[PKT_SIZE];
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -57,7 +59,6 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onCongestion(BLEServer* pServer) {
       Serial.println("CONGESTION!!!");
-      delay_ms = 1000; //slow down!
     }
 };
 
@@ -143,29 +144,27 @@ void setup() {
     delay(100);
   }
 
-
-  for (int i = 0; i < PKT_SIZE; i++) {
-    midiPacketLong[i] = i;
-  }
-
-  midiPacketLong[0] = 0x80;
-  midiPacketLong[1] = 0x80;
-  midiPacketLong[2] = 0xF0;
-
-  midiPacketLong[PKT_SIZE - 1] = 0xF7;
-
   time_0 = millis();
   time_1 = time_0;
 }
 
-bool flip;
-int wait_int_us = 12500;
-
 void loop() {
- 
-  if (deviceConnected) {
 
-    time_elapsed = millis() - time_0;
+
+  if (Serial.available())
+  {
+    char ch = Serial.read();
+    int idx = '9' - ch; //'0'-'9' is ASCII 48-57
+    if (idx < numIntervals && idx >= 0) { //ignore carriage return
+      send_interval = send_intervals[idx];
+    }
+    //Serial.print("SI = ");
+    //Serial.println(send_interval);
+  }
+  
+  if (deviceConnected) 
+  {
+    int time_elapsed = millis() - time_0;
     if (time_elapsed > 8191)
       time_0 = millis();
     //timetamp high = 10HH HHHH
@@ -177,15 +176,14 @@ void loop() {
     midiPacket[1] = B10000000 | tl;
 
     uint16_t te = micros() - time_1;
-    if (te > wait_int_us) {
-      
+    if (te > send_interval) 
+    {
       armed = true;
       time_1 = micros();
     }
 
-    if (digitalRead(D0) == LOW && armed) {
-      //AppleMIDI.noteOff(84, 0, 1);
-
+    if (digitalRead(D0) == LOW && armed) 
+    {
       midiPacket[3] = 0x3c; // middle C
       midiPacket[2] = 0x90; // note down, channel 0
       midiPacket[4] = 0;  // velocity 0
@@ -194,18 +192,14 @@ void loop() {
       armed = false;
     }
 
-    if (digitalRead(D0) == HIGH && armed) {
-      //AppleMIDI.noteOn(84, 127, 1);
-
-      //delay(1);
+    if (digitalRead(D0) == HIGH && armed) 
+    {
       midiPacket[3] = 0x3c; // middle C
       midiPacket[2] = 0x90; // note down, channel 0
       midiPacket[4] = 127;  // velocity
       pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
       pCharacteristic->notify();
-
       armed = false;
-      //Serial.println(".");
     }
 
   }

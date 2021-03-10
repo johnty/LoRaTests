@@ -29,6 +29,11 @@ bool transmit_on = true;
 
 RTC_DATA_ATTR int bootCount = 0;
 
+
+//                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
+int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
+int send_interval = 10000; //default 100hz
+
 unsigned int counter = 0;
 
 long t0;
@@ -64,11 +69,11 @@ bool valChanged = false;
 int preVal = -1;
 bool armed = false;
 
-int wait_us = 1000;
+
 
 void loop() {
 
-  if ( (micros() - t0) > wait_us ) {
+  if ( (micros() - t0) > send_interval ) {
     armed = true;
     t0 = micros();
   }
