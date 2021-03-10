@@ -18,8 +18,8 @@ const int gOutputPin = 2;    // Pin sending the trigger
 const int gInputPin = 3;     // Pin reading the response
 const int gLEDPin = 13;      // Pin for the LED on the board, for visual feedback
 
-const int gDelayBetweenTrials = 250;  // Measured in milliseconds; only approximate
-int variableDelay_us;
+const int gDelayBetweenTrials = 150;  // Measured in milliseconds; only approximate
+int variableDelay_ms;
 
 volatile uint8_t *gInputPinPortReg, *gOutputPinPortReg;
 uint8_t gInputPinBit, gOutputPinBit;
@@ -94,8 +94,13 @@ void loop() {
 
   // Wait for next trial
   //delay(gDelayBetweenTrials);
-  variableDelay_us = gDelayBetweenTrials*1000;
-  delayMicroseconds(variableDelay_us);
+
+  // add a +/- 25ms variability, so that the total delay varies by 50ms, or half of
+  // max sampling interval tested for 10 Hz continuous streams.
+  variableDelay_ms = gDelayBetweenTrials + random(0, 50) - 25;
+  delay(variableDelay_ms);
+  //todo: figure out timer reinabling so that we can use delayMicroseconds()
+  
   
   
 }
