@@ -8,6 +8,9 @@
 
 Adafruit_INA219 ina219;
 
+long t_elapsed = 0;
+long t_0;
+
 
 void setup(void)
 {
@@ -51,6 +54,9 @@ void loop(void)
     char c = Serial.read();
     if (c == 's')
       logging = !logging;
+      if (logging) {
+        t_0 = millis();
+      }
   }
   if (logging) {
     float shuntvoltage = 0;
@@ -65,6 +71,8 @@ void loop(void)
     power_mW = ina219.getPower_mW();
     loadvoltage = busvoltage + (shuntvoltage / 1000);
 
+    Serial.print(millis() - t_0);
+    Serial.print(" ");
     Serial.println(power_mW);
     delay(100);
   }
