@@ -90,6 +90,8 @@ void loop() {
   // this to get the actual time delay
   unsigned long latencyInTimerTicks = (unsigned long)finalCount + ((unsigned long)overflows << 16);
   unsigned long latencyInMicros = latencyInTimerTicks / 16;
+  Serial.print(variableDelay_ms);
+  Serial.print(" ");
   Serial.println(latencyInMicros - 1);
 
   // Wait for next trial
