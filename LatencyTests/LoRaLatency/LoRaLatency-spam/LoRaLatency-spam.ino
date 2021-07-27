@@ -28,16 +28,21 @@
 bool transmit_on = true;
 
 RTC_DATA_ATTR int bootCount = 0;
-
-
 //                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
 int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
-int send_interval = 10000; //default 100hz
+int send_interval = 100000; //default 10hz
+int numIntervals = 10;
+
+int test_interval_ms = 30000;
+int currMode = -1;
+
+long looptimer_0;
+
+#define AUTO_CHANGE true
 
 unsigned int counter = 0;
+long sendrate_t0;
 
-long t0;
-long t_loop;
 long dropped = 0;
 
 void setup() {
@@ -62,7 +67,9 @@ void setup() {
   LoRa.setSignalBandwidth(500E3);
   LoRa.setSpreadingFactor(7);
   Serial.println("...ok");
-  t0 = micros();
+  
+  sendrate_t0 = micros();
+  looptimer_0 = millis();
 }
 
 bool valChanged = false;
@@ -73,9 +80,14 @@ bool armed = false;
 
 void loop() {
 
-  if ( (micros() - t0) > send_interval ) {
+   if (AUTO_CHANGE)
+    {
+      updateInterval();
+    }
+
+  if ( (micros() - sendrate_t0) > send_interval ) {
     armed = true;
-    t0 = micros();
+    sendrate_t0 = micros();
   }
 
   if (armed) {
@@ -87,6 +99,21 @@ void loop() {
     LoRa.endPacket();
     armed = false;
   }
+}
 
-
+void updateInterval()
+{
+  if (millis() - looptimer_0 > test_interval_ms)
+  {
+    send_interval = send_intervals[currMode];
+    Serial.print("SI = ");
+    Serial.println(send_interval);
+    currMode++;
+    if (currMode >= numIntervals)
+    {
+      currMode = 0;
+    }
+    //reset loop timer for next round
+    looptimer_0 = millis();
+  }
 }

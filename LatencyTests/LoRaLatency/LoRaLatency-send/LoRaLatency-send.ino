@@ -47,7 +47,7 @@ void setup() {
   Serial.println(bootCount);
 
 
-  Serial.println("Starting LoRa...");
+  Serial.println("Starting LoRa..."); 
   SPI.begin(SCK, MISO, MOSI, SS);
   LoRa.setPins(SS, RST, DI0);
   if (!LoRa.begin(BAND)) {
@@ -77,7 +77,7 @@ void loop() {
     LoRa.beginPacket();
     LoRa.print("1");
     LoRa.endPacket();
-    Serial.println('.');
+    //Serial.println('.');
   }
 
   preVal = val;

@@ -90,12 +90,12 @@ void setup()
 bool armed = false;
 bool valChanged;
 
-
 //                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
 int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
-int send_interval = 10000; //default 100hz
+int send_interval = 100000; //default 100hz
 
 const int numIntervals = 10;
+
 const int test_interval_ms = 30000; //duration to run each send rate for, in ms
 int currMode = 0;
 
@@ -140,12 +140,12 @@ void loop()
       }
       else
       {
-        send_interval = send_intervals[currMode];
+        send_interval = send_intervals[currMode-1];
         Serial.print("SI = ");
         Serial.println(send_interval);
       }
       currMode++;
-      if (currMode >= numIntervals)
+      if (currMode > numIntervals)
       {
         currMode = 0;
       }

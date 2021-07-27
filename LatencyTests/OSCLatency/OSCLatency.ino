@@ -75,11 +75,6 @@ void setup()
   if (SOFTAP) Serial.println(WiFi.softAPIP());
   else Serial.println(WiFi.localIP());
 
-  WiFi.setTxPower(WIFI_POWER_19_5dBm); //doesn't do anything?
-  wifi_power_t pwr = WiFi.getTxPower();
-  Serial.print("WiFi Tx power = ");
-  Serial.println((int)pwr);
-
   //Serial.println("doing nothing for 30 seconds....");
   //delay(30*1000);
 
@@ -110,25 +105,25 @@ void loop()
 {
   armed = false;
   int val = digitalRead(D0);
-  if (val != preVal)
-    valChanged = true;
-  else
-    valChanged = false;
+  if (val != preVal) {
+    armed = true;
+    preVal = val;
+  }
+  else {
+    armed = false;
+  }
 
   OSCMessage oscMsg("/a");
   udp.beginPacket(destIP, destPort);
   oscMsg.add(val);
   oscMsg.send(udp);
-  long t1 = micros();
-  int diff = t1 - t0;
+  //long t1 = micros();
+  //int diff = t1 - t0;
   //if ( (diff >= send_interval) || (valChanged && (val == 1)) )
-  if (valChanged && (val == 1))
-    armed = true;
 
-  if (isConnected && armed) {
+  if (isConnected && armed && val == 1) {
     udp.endPacket();
-    //Serial.println(".");
-    t0 = t1;
+ 
   }
   preVal = val;
 }

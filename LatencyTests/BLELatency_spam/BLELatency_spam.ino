@@ -25,15 +25,20 @@ static const uint8_t led = 5;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
 
-uint16_t time_0; //for BLE timestamping
-uint16_t time_1; //for send rate control
+uint16_t time_ble_ts_0; //for BLE timestamping
+long time_1; //for send rate control
+long looptimer_0;
 
+#define AUTO_CHANGE true
 
 
 //                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
 int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
-int send_interval = 40000;
+int send_interval = 100000; //default 10hz
 int numIntervals = 10;
+
+int test_interval_ms = 30000;
+int currMode = -1;
 
 #define MIDI_SERVICE_UUID        "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 #define MIDI_CHARACTERISTIC_UUID "7772e5db-3868-4112-a1a9-f2669d106bf3"
@@ -50,6 +55,11 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
       digitalWrite(led, HIGH);
+      send_interval = 100000;
+      Serial.print("SI = ");
+      Serial.println(send_interval);
+      currMode = 0;
+      looptimer_0 = millis();
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -90,6 +100,9 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(D0, INPUT);
+
+  midiPacket[3] = 0x3c; // middle C
+  midiPacket[2] = 0x90; // note down, channel 0
 
   BLEDevice::init("esp32");
 
@@ -144,8 +157,8 @@ void setup() {
     delay(100);
   }
 
-  time_0 = millis();
-  time_1 = time_0;
+  time_ble_ts_0 = millis();
+  looptimer_0 = time_1 = time_ble_ts_0;
 }
 
 void loop() {
@@ -161,12 +174,16 @@ void loop() {
     //Serial.print("SI = ");
     //Serial.println(send_interval);
   }
-  
-  if (deviceConnected) 
+
+  if (deviceConnected)
   {
-    int time_elapsed = millis() - time_0;
+    if (AUTO_CHANGE)
+    {
+      updateInterval();
+    }
+    int time_elapsed = millis() - time_ble_ts_0;
     if (time_elapsed > 8191)
-      time_0 = millis();
+      time_ble_ts_0 = millis();
     //timetamp high = 10HH HHHH
     byte th = B10000000;
     th = time_elapsed >> 7;
@@ -175,32 +192,44 @@ void loop() {
     byte tl = B01111111 & time_elapsed;
     midiPacket[1] = B10000000 | tl;
 
-    uint16_t te = micros() - time_1;
-    if (te > send_interval) 
+    long tn = micros();
+    int diff = tn - time_1;
+    if (diff >= send_interval)
     {
       armed = true;
+    }
+    if (armed)
+    {
+      if (digitalRead(D0) == LOW)
+      {
+        midiPacket[4] = 0;  // velocity 0        
+      }
+
+      if (digitalRead(D0) == HIGH)
+      {
+        midiPacket[4] = 127;  // velocity
+      }
+      pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
+      pCharacteristic->notify();
+      armed = false;
       time_1 = micros();
     }
+  }
+}
 
-    if (digitalRead(D0) == LOW && armed) 
+void updateInterval()
+{
+  if (millis() - looptimer_0 > test_interval_ms)
+  {
+    send_interval = send_intervals[currMode];
+    Serial.print("SI = ");
+    Serial.println(send_interval);
+    currMode++;
+    if (currMode >= numIntervals)
     {
-      midiPacket[3] = 0x3c; // middle C
-      midiPacket[2] = 0x90; // note down, channel 0
-      midiPacket[4] = 0;  // velocity 0
-      pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
-      pCharacteristic->notify();
-      armed = false;
+      currMode = 0;
     }
-
-    if (digitalRead(D0) == HIGH && armed) 
-    {
-      midiPacket[3] = 0x3c; // middle C
-      midiPacket[2] = 0x90; // note down, channel 0
-      midiPacket[4] = 127;  // velocity
-      pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
-      pCharacteristic->notify();
-      armed = false;
-    }
-
+    //reset loop timer for next round
+    looptimer_0 = millis();
   }
 }

@@ -20,7 +20,7 @@
 //#define D0 4 //D32 PRO
 bool armed = true;
 
-static const uint8_t led = 5;
+static const uint8_t led = LED_BUILTIN;
 
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
@@ -191,18 +191,5 @@ void loop() {
       armed = false;
       Serial.println(".");
     }
-    //delay(delay_ms);
-
-    // note up
-    /*
-        midiPacket[2] = 0x80; // note up, channel 0
-        midiPacket[4] = 0;    // velocity
-        pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes)
-        pCharacteristic->notify();
-
-
-        delay(delay_ms);
-    */
-
   }
 }
