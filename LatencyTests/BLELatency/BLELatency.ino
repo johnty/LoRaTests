@@ -1,7 +1,7 @@
 /*
    ESP32 BLE MIDI Trigger Test
 
-   Generates a BLE MIDI note event when a digital pin is toggled.
+   Generates a BLE MIDI note event (middle C, vel 127) when a digital pin is toggled.
 
    Board: V1 from https://github.com/lewisxhe/TTGO-LoRa-Series (note pinouts and special pin assignments)
    https://github.com/LilyGO/TTGO-LORA32/tree/LilyGO-868-V1.0

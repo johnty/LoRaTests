@@ -1,7 +1,8 @@
 /*
-   ESP32 BLE MIDI Trigger Test
+   ESP32 BLE MIDI streaming rate test
 
-   Generates a BLE MIDI note event when a digital pin is toggled.
+   Constantly send at fixed intervals.
+    note Vel = 127 if pin is HIGH, or 0 if low
 
    Board: V1 from https://github.com/lewisxhe/TTGO-LoRa-Series (note pinouts and special pin assignments)
    https://github.com/LilyGO/TTGO-LORA32/tree/LilyGO-868-V1.0

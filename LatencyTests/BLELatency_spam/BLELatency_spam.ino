@@ -1,7 +1,13 @@
 /*
    ESP32 BLE MIDI Trigger Test
 
-   Generates a BLE MIDI note event when a digital pin is toggled.
+   Constantly send note at fixed intervals
+   v = 127 if high, 0 if low
+
+   AUTO_CHANGE will cause the send rate
+   to cycle through list defined in send_intervals[]
+   for each test_interval_ms, otherwise it will be whatever
+   send_interval is set to initially upon start
 
    Board: V1 from https://github.com/lewisxhe/TTGO-LoRa-Series (note pinouts and special pin assignments)
    https://github.com/LilyGO/TTGO-LORA32/tree/LilyGO-868-V1.0
@@ -29,12 +35,12 @@ uint16_t time_ble_ts_0; //for BLE timestamping
 long time_1; //for send rate control
 long looptimer_0;
 
-#define AUTO_CHANGE true
+#define AUTO_CHANGE false
 
 
 //                 in Hz:     10     20     25     50     75     80    100,  200   400  inf
 int send_intervals[10] = {100000, 50000, 40000, 20000, 13333, 12500, 10000, 5000, 2500, 0};
-int send_interval = 100000; //default 10hz
+int send_interval = 10000; //default 10hz
 int numIntervals = 10;
 
 int test_interval_ms = 30000;
@@ -55,7 +61,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
       digitalWrite(led, HIGH);
-      send_interval = 100000;
+      send_interval = 10000;
       Serial.print("SI = ");
       Serial.println(send_interval);
       currMode = 0;
@@ -162,8 +168,6 @@ void setup() {
 }
 
 void loop() {
-
-
   if (Serial.available())
   {
     char ch = Serial.read();
