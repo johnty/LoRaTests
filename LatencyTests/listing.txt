@@ -1,0 +1,23 @@
+ArdBLELatency: simple digital trigger BLE send using BLE MIDI Transport library
+
+BLELatency: simple digital trigger BLE send using ESP32 BLE library and explicit GATT def
+
+BLELatency_on_off: as above, but sends a note off 100ms later (for iOS/GarageBand)
+
+BLELatency_spam: keeps on sampling digital input and sends at set intervals
+
+BLELatency_spam_trigger: keeps on sampilng digial input, sends on trigger or otherwise at set intervals
+
+BLE_autosend: same as spam but sent intervals change over time
+
+BLE_autosend_bleT: same as _spam but using BLE MIDI Transport library
+
+LoRaLatency: folder containing LoRa specific examples
+
+OSCLatency: trigger test via OSC/WiFI
+
+OSCLatency_spam: constant interval send + trigger via OSC/WiFi
+
+USBLatencyGB_C5: Teensy USB MIDI (similar to BLE...on_off above. For iOS/GarageBand)
+
+
