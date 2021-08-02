@@ -26,7 +26,7 @@ bool armed = true;
 
 
 void setup() {
-  pinMode(D0, INPUT);
+  pinMode(D0, INPUT_PULLDOWN);
 }
 
 void loop() {
